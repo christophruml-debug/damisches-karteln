@@ -1,0 +1,592 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#26392F">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600;700&family=Young+Serif&display=swap" rel="stylesheet">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Karteln">
+<link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
+<link rel="icon" type="image/png" sizes="512x512" href="icon-512.png">
+<link rel="apple-touch-icon" href="icon-180.png">
+<title>Damisches Karteln</title>
+<style>
+:root{
+  --loden:#26392F; --loden-2:#31493c; --paper:#E6EAE4; --sheet:#FBFCFA; --ink:#17211C; --muted:#5F6B64; --line:#D3D9D2;
+  --herz:#B3262E; --laub:#3D7339; --eichel:#7A4A26; --gold:#B8860B; --err:#B3262E; --auto:#EEF3EC;
+  --display:"Young Serif",Georgia,serif; --ui:"Instrument Sans",system-ui,-apple-system,sans-serif;
+}
+@media (prefers-color-scheme: dark){
+  :root{ --paper:#111814; --sheet:#1A231E; --ink:#E8ECE7; --muted:#97A39B; --line:#2B3731; --auto:#22302A;
+    --loden:#1C2B23; --loden-2:#2F5240; --herz:#E0565C; --laub:#73B06A; --eichel:#C08A5C; --gold:#E0B03C; --err:#E0565C; --btn:#3B6B50; }
+}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{font-family:var(--ui);font-size:16px;line-height:1.45;background:var(--paper);color:var(--ink);
+  padding-bottom:env(safe-area-inset-bottom);-webkit-tap-highlight-color:transparent;font-variant-numeric:tabular-nums}
+button,input,select{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
+
+/* Kopf */
+header{background:var(--loden);color:#F2F4EF;padding:calc(18px + env(safe-area-inset-top)) 20px 0}
+.top{max-width:560px;margin:0 auto;display:flex;align-items:center;gap:12px}
+h1{font-family:var(--display);font-weight:400;font-size:28px;line-height:1.1;margin:0;letter-spacing:-.2px}
+#status{margin-left:auto;font-size:12px;padding:3px 9px;border-radius:99px;background:rgba(255,255,255,.1);white-space:nowrap}
+#status.live::before{content:"";display:inline-block;width:7px;height:7px;border-radius:50%;background:#7BD17B;margin-right:6px;vertical-align:1px}
+.games{max-width:560px;margin:14px auto 0;display:flex;gap:22px;overflow-x:auto}
+.games button{background:none;border:0;padding:8px 0 11px;font-size:15px;color:rgba(242,244,239,.6);border-bottom:2px solid transparent;cursor:pointer;white-space:nowrap}
+.games button.on{color:#fff;border-bottom-color:var(--gold);font-weight:600}
+.games button:disabled{cursor:default;color:rgba(242,244,239,.35)}
+
+main{max-width:560px;margin:0 auto;padding:0 16px 48px}
+
+/* Spielerkarten – das eine auffällige Element */
+.hand{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:-2px 0 22px;padding-top:18px;position:relative}
+.hand::before{content:"";position:absolute;inset:0 -16px auto;height:46px;background:var(--loden);z-index:-1}
+.pcard{position:relative;aspect-ratio:5/6.6;background:var(--sheet);border-radius:10px;padding:24px 6px 22px;
+  box-shadow:0 1px 0 rgba(0,0,0,.04),0 6px 16px -8px rgba(20,35,28,.35);display:flex;flex-direction:column;align-items:center;justify-content:center;
+  transition:transform .25s ease, box-shadow .25s ease}
+.pcard::after{content:"";position:absolute;inset:5px;border:1px solid currentColor;border-radius:6px;opacity:.28;pointer-events:none}
+.pcard.s0{color:var(--herz)} .pcard.s1{color:var(--laub)} .pcard.s2{color:var(--eichel)}
+.pcard.lead{transform:translateY(-6px);box-shadow:0 14px 26px -12px rgba(20,35,28,.55)}
+.idx{position:absolute;display:flex;flex-direction:column;align-items:center;font-family:var(--display);font-size:13px;line-height:1}
+.idx svg{width:11px;height:11px;margin-top:2px;fill:currentColor}
+.idx.tl{top:10px;left:10px} .idx.br{bottom:10px;right:10px;transform:rotate(180deg)}
+.pname{font-size:13px;font-weight:600;color:var(--ink);margin-bottom:2px}
+.big{font-family:var(--display);font-size:clamp(28px,9vw,40px);line-height:1;color:var(--ink)}
+.tot{font-size:12px;color:var(--muted);margin-top:4px}
+.meta{font-size:12px;color:var(--muted);margin-top:6px;display:flex;gap:8px;min-height:16px;white-space:nowrap}
+.meta .st{color:var(--gold);font-weight:600}
+.gibt{position:absolute;top:9px;right:9px;font-size:11px;font-weight:600;color:#fff;background:var(--loden-2);border-radius:99px;padding:2px 7px}
+@media (prefers-reduced-motion: reduce){ .pcard{transition:none} }
+
+/* Abschnitte */
+section{margin-bottom:26px}
+.panel{background:var(--sheet);border-radius:14px;padding:16px;box-shadow:0 1px 0 rgba(0,0,0,.04)}
+h2{font-family:var(--display);font-weight:400;font-size:20px;margin:0 0 10px;letter-spacing:-.1px}
+.head{display:flex;align-items:baseline;justify-content:space-between;gap:10px;margin-bottom:10px}
+.head h2{margin:0}
+.turn{font-size:14px;color:var(--muted)} .turn b{color:var(--ink)}
+
+/* Eingabe */
+.inputs{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.inputs label{display:flex;align-items:center;justify-content:center;gap:5px;font-size:14px;font-weight:600;margin-bottom:6px}
+.inputs label svg{width:12px;height:12px;fill:currentColor}
+.inputs .s0 label{color:var(--herz)} .inputs .s1 label{color:var(--laub)} .inputs .s2 label{color:var(--eichel)}
+.inputs input{width:100%;font-family:var(--display);font-size:28px;text-align:center;padding:12px 4px;border:1.5px solid var(--line);border-radius:10px;background:var(--sheet);color:var(--ink)}
+.inputs input:focus{outline:none;border-color:var(--loden-2);box-shadow:0 0 0 3px rgba(49,73,60,.15)}
+.inputs input.auto{background:var(--auto);border-style:dashed;color:var(--muted)}
+.hint{font-size:13px;color:var(--muted);min-height:19px;margin:10px 0 4px;text-align:center}
+.hint.err{color:var(--err)} .hint.sweep{color:var(--gold);font-weight:600}
+
+/* Knöpfe */
+button{border:0;border-radius:10px;padding:13px 14px;font-weight:600;cursor:pointer}
+.primary{background:var(--btn,var(--loden));color:#fff;width:100%;font-size:16px;margin-top:8px}
+.primary:disabled{opacity:.35;cursor:default}
+.ghost{background:transparent;color:var(--ink);border:1px solid var(--line)}
+.danger{color:var(--err)}
+.link{background:none;padding:6px 0;color:var(--muted);font-weight:500;text-decoration:underline;text-underline-offset:3px}
+.row{display:flex;gap:8px} .row>*{flex:1}
+
+/* Tabellen */
+table{width:100%;border-collapse:collapse;font-size:15px}
+th,td{padding:8px 4px;text-align:center;border-bottom:1px solid var(--line)}
+th{font-size:13px;color:var(--muted);font-weight:500}
+td.r{color:var(--muted);font-size:13px;text-align:left;white-space:nowrap}
+td.zero{color:var(--gold)}
+td.zero svg{width:15px;height:15px;fill:currentColor;vertical-align:-2px}
+tr.sum td{font-weight:700;border-bottom:0}
+.empty{color:var(--muted);font-size:14px;margin:4px 0}
+
+/* Spieltage */
+.tally{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:12px}
+.tally div{background:var(--sheet);border-radius:10px;padding:10px 12px}
+.tally b{display:block;font-size:14px}
+.tally span{font-size:13px;color:var(--muted)}
+.tally .s0 b{color:var(--herz)} .tally .s1 b{color:var(--laub)} .tally .s2 b{color:var(--eichel)}
+.day-item{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:12px 0;border-bottom:1px solid var(--line);font-size:15px}
+.day-item:last-of-type{border-bottom:0}
+.day-item .t{color:var(--muted);font-size:13px}
+.day-item .w{font-weight:600;white-space:nowrap}
+.day-item .edit{background:none;padding:6px 4px 6px 10px;color:var(--muted);font-weight:500;font-size:14px;text-decoration:underline;text-underline-offset:3px}
+.editor{background:var(--sheet);border-radius:12px;padding:12px;margin:2px 0 12px}
+.editor table input{width:100%;font-size:16px;text-align:center;padding:7px 2px;border:1px solid var(--line);border-radius:8px;background:var(--paper)}
+.editor table input.bad{border-color:var(--err)}
+.editor tr.del td{opacity:.35;text-decoration:line-through}
+.editor td.x button{background:none;padding:4px 6px;font-size:13px;color:var(--muted);font-weight:500}
+.editor .msg{font-size:13px;color:var(--err);min-height:18px;margin:8px 0}
+
+.pick{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:8px 0 6px}
+.pick button{background:var(--paper);border:1.5px solid transparent}
+.pick button.on{border-color:var(--loden-2);background:var(--auto)}
+details summary{cursor:pointer;color:var(--muted);font-size:15px;padding:4px 0}
+.setting{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-top:12px;font-size:15px}
+.setting select,.setting input{padding:7px 8px;border-radius:8px;border:1px solid var(--line);background:var(--sheet)}
+.banner{background:var(--sheet);border-left:3px solid var(--gold);border-radius:8px;padding:10px 12px;font-size:14px;margin:0 0 22px}
+.share{word-break:break-all;font-size:13px;background:var(--paper);padding:9px;border-radius:8px;margin:8px 0;color:var(--muted)}
+.sub-h{font-size:15px;font-weight:600;margin-top:18px}
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="suit0" viewBox="0 0 24 24"><path d="M12 21s-7.5-4.6-9.6-9.2C.9 8.4 2.9 4 6.9 4c2.2 0 3.7 1.2 5.1 3 1.4-1.8 2.9-3 5.1-3 4 0 6 4.4 4.5 7.8C19.5 16.4 12 21 12 21z"/></symbol>
+  <symbol id="suit1" viewBox="0 0 24 24"><path d="M12 2c4.6 3 7 6.6 7 10.4 0 3.6-2.6 6.3-6 6.8V22h-2v-2.8c-3.4-.5-6-3.2-6-6.8C5 8.6 7.4 5 12 2z"/></symbol>
+  <symbol id="suit2" viewBox="0 0 24 24"><path d="M5 9.5C5 6.5 8.1 4 12 4s7 2.5 7 5.5V11H5V9.5zM11 1.5h2V4h-2zM6.2 12.5h11.6c0 5-2.6 9.5-5.8 9.5s-5.8-4.5-5.8-9.5z"/></symbol>
+  <symbol id="star" viewBox="0 0 24 24"><path d="M12 2.5l2.9 6.1 6.6.8-4.9 4.6 1.3 6.6L12 17.3l-5.9 3.3 1.3-6.6L2.5 9.4l6.6-.8z"/></symbol>
+</svg>
+<header>
+  <div class="top"><h1>Damisches Karteln</h1><span id="status"></span></div>
+  <nav class="games" id="games" aria-label="Spiel wählen"></nav>
+</header>
+<main id="app"><p class="empty" style="padding-top:24px">Lädt …</p></main>
+
+<script type="module">
+/* ============ KONFIGURATION ============
+   Hier die Werte aus Firebase einfügen (siehe ANLEITUNG.md, Schritt 2).
+   Solange apiKey leer ist, läuft die Seite im Demo-Modus (nur auf diesem Gerät). */
+const FIREBASE_CONFIG = {
+  apiKey: "AIzaSyDlsDiNb2fJQoudNMB5UR9nLZ3RVCFCA48",
+  authDomain: "heimkehrer-ff6b3.firebaseapp.com",
+  projectId: "heimkehrer-ff6b3",
+  storageBucket: "heimkehrer-ff6b3.firebasestorage.app",
+  messagingSenderId: "41174541428",
+  appId: "1:41174541428:web:9af5ca57d5db65efd75d21"
+};
+/* ======================================= */
+
+const PLAYERS = ['Chris', 'Tobi', 'Stanzl'];
+
+/* Spielmodi. Ein neues Spiel bekommt einen eigenen Eintrag mit eigenem prefix,
+   dann liegen seine Daten getrennt von den anderen Spielen. */
+const GAMES = [
+  { id: 'heimkehrer', name: 'Heimkehrer', total: 115, prefix: '' }   // prefix '' = bestehende Daten
+];
+let savedGame = ''; try { savedGame = localStorage.getItem('dk_game') || ''; } catch {}
+const GAME = GAMES.find(g => g.id === savedGame) || GAMES[0];
+const TOTAL = GAME.total;
+const COL = { runden: GAME.prefix + 'runden', spieltage: GAME.prefix + 'spieltage', meta: 'zustand' + (GAME.prefix ? '_' + GAME.id : '') };
+const FB = 'https://www.gstatic.com/firebasejs/10.12.2/';
+
+const state = { rounds: [], sessions: [], meta: {} };
+const $ = s => document.querySelector(s);
+const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+const fmtDate = ts => new Date(ts).toLocaleDateString('de-AT', { weekday: 'short', day: '2-digit', month: '2-digit', year: '2-digit' });
+const store = {
+  get(k) { try { return localStorage.getItem(k); } catch { return null; } },
+  set(k, v) { try { localStorage.setItem(k, v); } catch {} }
+};
+
+/* ---------- Zugangsschlüssel (steht im geteilten Link) ---------- */
+function getKey() {
+  const m = location.hash.match(/k=([A-Za-z0-9]{20,})/);
+  if (m) { store.set('hk_key', m[1]); return m[1]; }
+  const k = store.get('hk_key');
+  if (!k || k.length < 20) return null;   // alte, zu kurze Schlüssel verwerfen
+  history.replaceState(null, '', '#k=' + k);
+  return k;
+}
+function newKey() {
+  const a = new Uint8Array(24); crypto.getRandomValues(a);
+  return Array.from(a, b => 'abcdefghijkmnpqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ23456789'[b % 56]).join('');
+}
+
+/* ---------- Speicher: Firebase oder Demo ---------- */
+async function firebaseBackend(key) {
+  const { initializeApp } = await import(FB + 'firebase-app.js');
+  const fs = await import(FB + 'firebase-firestore.js');
+  const app = initializeApp(FIREBASE_CONFIG);
+  let db;
+  try { db = fs.initializeFirestore(app, { localCache: fs.persistentLocalCache() }); }
+  catch { db = fs.getFirestore(app); }
+  const ref = (col, id) => fs.doc(db, 'spiele', key, COL[col] || col, id);
+  return {
+    subscribe(cb) {
+      const err = e => setStatus('⚠︎ ' + (e.code || 'Fehler'));
+      fs.onSnapshot(fs.collection(db, 'spiele', key, COL.runden), { includeMetadataChanges: true }, s => {
+        state.rounds = s.docs.map(d => ({ id: d.id, ...d.data() }));
+        setStatus(s.metadata.hasPendingWrites ? 'speichert …' : s.metadata.fromCache ? 'offline' : '● live');
+        cb();
+      }, err);
+      fs.onSnapshot(fs.collection(db, 'spiele', key, COL.spieltage), s => {
+        state.sessions = s.docs.map(d => ({ id: d.id, ...d.data() })); cb();
+      }, err);
+      fs.onSnapshot(ref('meta', COL.meta), s => { state.meta = s.data() || {}; metaLoaded = true; cb(); }, err);
+    },
+    put: (col, id, data) => fs.setDoc(ref(col, id), data),
+    patch: (col, id, data) => fs.setDoc(ref(col, id), data, { merge: true }),
+    remove: (col, id) => fs.deleteDoc(ref(col, id)),
+    setMeta: data => fs.setDoc(ref('meta', COL.meta), data, { merge: true })
+  };
+}
+function demoBackend() {
+  let cb = () => {};
+  const load = () => {
+    try { Object.assign(state, JSON.parse(store.get('hk_demo' + GAME.prefix)) || {}); } catch {}
+  };
+  const save = () => { store.set('hk_demo' + GAME.prefix, JSON.stringify(state)); cb(); };
+  const list = col => col === 'runden' ? state.rounds : state.sessions;
+  return {
+    subscribe(f) { cb = f; load(); metaLoaded = true; setStatus('Demo'); cb(); },
+    put(col, id, data) { const l = list(col); const i = l.findIndex(x => x.id === id); i >= 0 ? l[i] = { id, ...data } : l.push({ id, ...data }); save(); },
+    patch(col, id, data) { const x = list(col).find(x => x.id === id); Object.assign(x, data); save(); },
+    remove(col, id) { if (col === 'runden') state.rounds = state.rounds.filter(x => x.id !== id); else state.sessions = state.sessions.filter(x => x.id !== id); save(); },
+    setMeta(data) { Object.assign(state.meta, data); save(); }
+  };
+}
+function setStatus(t) { const el = $('#status'); el.textContent = t.replace('● ', ''); el.classList.toggle('live', t.includes('live')); }
+
+/* ---------- Berechnungen ---------- */
+const sum3 = rs => rs.reduce((a, r) => a.map((v, i) => v + r.s[i]), [0, 0, 0]);
+const lowWins = () => state.meta.lowWins !== false;
+function leaders(tot) {
+  const best = lowWins() ? Math.min(...tot) : Math.max(...tot);
+  return tot.map((v, i) => v === best ? i : -1).filter(i => i >= 0);
+}
+function curSession() { return state.sessions.find(s => s.id === state.meta.currentSid && !s.end) || null; }
+function sessionRounds(sid) { return state.rounds.filter(r => r.sid === sid).sort((a, b) => a.ts - b.ts); }
+function winTally() {
+  const w = [0, 0, 0];
+  state.sessions.forEach(s => (s.winners || []).forEach(i => w[i]++));
+  return w;
+}
+// Stern = Durchmarsch (jemand hat alle 115 Punkte)
+function starOf(r) {
+  if (r.imp) return -1;
+  if (Number.isInteger(r.star)) return r.star;
+  const z = r.s.filter(v => v === 0).length, f = r.s.filter(v => v === TOTAL).length;
+  return z === 1 && f === 2 ? r.s.indexOf(0) : -1;
+}
+function starTally(rs) {
+  const st = [0, 0, 0];
+  rs.forEach(r => { const k = starOf(r); if (k >= 0) st[k]++; });
+  return st;
+}
+const starStr = n => n ? '⭐' + (n > 1 ? '×' + n : '') : '';
+
+/* ---------- Eingabe-Logik: 2 eintragen, 3. füllt sich ---------- */
+let typed = [false, false, false];
+function autoFill() {
+  const ins = [...document.querySelectorAll('#roundIn input')];
+  const val = ins.map(i => i.value === '' ? null : Number(i.value));
+  const filled = typed.map((t, i) => t && val[i] !== null);
+  const n = filled.filter(Boolean).length;
+  const hint = $('#hint');
+  hint.className = 'hint';
+  ins.forEach((inp, i) => { if (!typed[i]) { inp.value = ''; inp.classList.remove('auto'); } });
+  if (n === 2) {
+    const k = filled.indexOf(false);
+    const [a, b] = val.filter((_, i) => filled[i]);
+    const v = TOTAL - a - b;
+    if (v >= 0) { ins[k].value = v; ins[k].classList.add('auto'); }
+    else { $('#save').disabled = true; hint.textContent = 'Zusammen schon ' + (a + b) + ' – mehr als ' + TOTAL + '.'; hint.className = 'hint err'; return; }
+  }
+  const res = readRound();
+  $('#save').disabled = !res.ok;
+  if (res.sweep !== undefined) { hint.textContent = '★ Durchmarsch von ' + PLAYERS[res.sweep] + ', das gibt einen Stern'; hint.className = 'hint sweep'; }
+  else if (res.msg) { hint.textContent = res.msg; hint.className = 'hint' + (res.bad ? ' err' : ''); }
+  else hint.textContent = '';
+}
+function readRound() {
+  const ins = [...document.querySelectorAll('#roundIn input')];
+  if (ins.some(i => i.value === '')) return { ok: false, msg: 'Zwei Spieler eintragen, der dritte ergänzt sich. 115 heißt Durchmarsch.' };
+  const s = ins.map(i => Number(i.value));
+  if (s.some(v => !Number.isInteger(v) || v < 0 || v > TOTAL)) return { ok: false, bad: true, msg: 'Nur Werte von 0 bis ' + TOTAL + '.' };
+  const zeros = s.filter(v => v === 0).length, fulls = s.filter(v => v === TOTAL).length;
+  if (zeros === 1 && fulls === 2) return { ok: true, s, sweep: s.indexOf(0) };
+  const sum = s.reduce((a, b) => a + b, 0);
+  if (sum !== TOTAL) return { ok: false, bad: true, msg: 'Summe ist ' + sum + ' statt ' + TOTAL + '.' };
+  return { ok: true, s };
+}
+
+/* ---------- Aktionen ---------- */
+let api, pickDealer = 0;
+async function saveRound() {
+  const res = readRound(); const ses = curSession();
+  if (!res.ok || !ses) return;
+  const d = state.meta.dealer ?? 0;
+  await Promise.all([
+    api.put('runden', uid(), { sid: ses.id, s: res.s, d, ts: Date.now(), star: res.sweep ?? -1 }),
+    api.setMeta({ dealer: (d + 1) % 3 })
+  ]);
+  typed = [false, false, false];
+  render();
+  const first = document.querySelector('.inputs input'); if (first) first.focus();
+}
+async function undoLast() {
+  const ses = curSession(); const rs = ses ? sessionRounds(ses.id) : [];
+  const last = rs[rs.length - 1]; if (!last) return;
+  if (!confirm('Letzte Runde (' + last.s.join(' / ') + ') löschen?')) return;
+  await Promise.all([api.remove('runden', last.id), api.setMeta({ dealer: last.d })]);
+}
+async function startSession() {
+  const id = uid();
+  await api.put('spieltage', id, { start: Date.now(), end: null, winners: null, totals: null });
+  await api.setMeta({ currentSid: id, dealer: pickDealer });
+}
+async function endSession() {
+  const ses = curSession(); if (!ses) return;
+  const rs = sessionRounds(ses.id);
+  if (!rs.length) { if (confirm('Spieltag ohne Runden verwerfen?')) { await api.remove('spieltage', ses.id); await api.setMeta({ currentSid: null }); } return; }
+  const tot = sum3(rs); const w = leaders(tot);
+  if (!confirm('Spieltag beenden?\nSieger: ' + w.map(i => PLAYERS[i]).join(' & ') + ' (' + tot.join(' / ') + ')')) return;
+  await api.patch('spieltage', ses.id, { end: Date.now(), winners: w, totals: tot, rounds: rs.length });
+  await api.setMeta({ currentSid: null });
+}
+
+// Abgeschlossenen Spieltag nachtragen (nur Endstände)
+async function addPastSession(id, ts, tot) {
+  await api.put('spieltage', id, { start: ts, end: ts, winners: leaders(tot), totals: tot, rounds: 1, imp: true });
+  await api.put('runden', id + '-r', { sid: id, s: tot, d: null, ts, imp: true });
+}
+// Einmalig: Spieltag vom 12.10.2026 übernehmen (feste IDs → doppelt ausgeführt schadet nicht)
+let seedChecked = false, metaLoaded = false;
+async function seedOnce() {
+  if (seedChecked || state.meta.importDone || GAME.id !== 'heimkehrer') return;
+  seedChecked = true;
+  await addPastSession('import-2026-10-12', new Date(2026, 9, 12, 20, 0).getTime(), [680, 925, 1035]);
+  await api.setMeta({ importDone: true });
+}
+
+/* ---------- Spieltage bearbeiten ---------- */
+let edit = null;   // { sid, date, rows: {roundId: [a,b,c]}, del: Set }
+const isoDate = ts => { const d = new Date(ts); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); };
+function openEdit(sid) {
+  const ses = state.sessions.find(x => x.id === sid);
+  edit = { sid, date: isoDate(ses.start), rows: {}, del: new Set() };
+  sessionRounds(sid).forEach(r => edit.rows[r.id] = r.s.map(String));
+  render();
+}
+function checkRow(r, vals) {
+  if (vals.some(v => !/^\d+$/.test(v))) return 'Bitte nur Zahlen eintragen.';
+  if (r.imp) return '';
+  const n = vals.map(Number);
+  if (n.some(v => v > TOTAL)) return 'Höchstens ' + TOTAL + ' pro Runde.';
+  const z = n.filter(v => v === 0).length, f = n.filter(v => v === TOTAL).length;
+  if (z === 1 && f === 2) return '';
+  const sum = n.reduce((a, b) => a + b, 0);
+  return sum === TOTAL ? '' : 'Eine Runde ergibt ' + sum + ' statt ' + TOTAL + '.';
+}
+function editorHtml(ses) {
+  const rs = sessionRounds(ses.id);
+  const rows = rs.map((r, k) => {
+    const v = edit.rows[r.id], gone = edit.del.has(r.id), bad = !gone && checkRow(r, v);
+    return `<tr class="${gone ? 'del' : ''}"><td class="r">${r.imp ? 'Endstand' : k + 1}</td>` +
+      v.map((x, i) => `<td><input data-er="${r.id}" data-ei="${i}" value="${x}" inputmode="numeric" pattern="[0-9]*" class="${bad ? 'bad' : ''}" ${gone ? 'disabled' : ''}></td>`).join('') +
+      `<td class="x"><button data-edel="${r.id}" title="${gone ? 'Wiederherstellen' : 'Runde löschen'}">${gone ? 'Zurück' : 'Löschen'}</button></td></tr>`;
+  }).join('');
+  return `<div class="editor">
+    <div class="setting" style="margin-top:0"><span>Datum</span><input type="date" id="edDate" value="${edit.date}" style="font:inherit;padding:6px;border-radius:8px;border:1px solid var(--line);background:var(--card);color:var(--ink)"></div>
+    <table style="margin-top:8px"><thead><tr><th></th>${PLAYERS.map(p => '<th>' + p + '</th>').join('')}<th></th></tr></thead><tbody>${rows}</tbody></table>
+    <div class="msg" id="edMsg"></div>
+    <div class="row"><button class="ghost" id="edCancel">Abbrechen</button><button class="primary" id="edSave" style="margin-top:0">Speichern</button></div>
+    <button class="ghost danger" id="edDelete" style="width:100%;margin-top:8px">Ganzen Spieltag löschen</button>
+  </div>`;
+}
+async function saveEdit() {
+  const ses = state.sessions.find(x => x.id === edit.sid); if (!ses) { edit = null; render(); return; }
+  const rs = sessionRounds(ses.id);
+  const keep = rs.filter(r => !edit.del.has(r.id));
+  for (const r of keep) { const e = checkRow(r, edit.rows[r.id]); if (e) { $('#edMsg').textContent = e; return; } }
+  if (!keep.length) { $('#edMsg').textContent = 'Alle Runden gelöscht – dann lieber „Ganzen Spieltag löschen“.'; return; }
+  const [y, m, d] = edit.date.split('-').map(Number);
+  const old = new Date(ses.start);
+  const shift = new Date(y, m - 1, d, old.getHours(), old.getMinutes()).getTime() - ses.start;
+  const ops = [];
+  rs.forEach(r => {
+    if (edit.del.has(r.id)) { ops.push(api.remove('runden', r.id)); return; }
+    const sNew = edit.rows[r.id].map(Number);
+    const z = sNew.filter(v => v === 0).length, f = sNew.filter(v => v === TOTAL).length;
+    const star = !r.imp && z === 1 && f === 2 ? sNew.indexOf(0) : -1;
+    if (shift || sNew.join() !== r.s.join() || (!r.imp && star !== starOf(r)))
+      ops.push(api.patch('runden', r.id, { s: sNew, star, ts: r.ts + shift }));
+  });
+  const tot = sum3(keep.map(r => ({ s: edit.rows[r.id].map(Number) })));
+  ops.push(api.patch('spieltage', ses.id, { start: ses.start + shift, end: ses.end + shift, totals: tot, winners: leaders(tot), rounds: keep.filter(r => !r.imp).length || 1 }));
+  await Promise.all(ops);
+  edit = null; render();
+}
+async function deleteSession() {
+  const ses = state.sessions.find(x => x.id === edit.sid);
+  if (!ses || !confirm('Spieltag vom ' + fmtDate(ses.start) + ' mit allen Runden endgültig löschen?')) return;
+  await Promise.all([...sessionRounds(ses.id).map(r => api.remove('runden', r.id)), api.remove('spieltage', ses.id)]);
+  edit = null; render();
+}
+
+/* ---------- Darstellung ---------- */
+function render() {
+  const app = $('#app'); const ses = curSession();
+  const allTot = sum3(state.rounds); const wins = winTally();
+  const rs = ses ? sessionRounds(ses.id) : [];
+  const dayTot = sum3(rs);
+  const lead = rs.length ? leaders(dayTot) : [];
+  const d = state.meta.dealer ?? 0;
+  const starsAll = starTally(state.rounds), starsDay = starTally(rs);
+  if (metaLoaded && !seedChecked && !state.meta.importDone) setTimeout(seedOnce, 0);
+
+  const suit = i => `<svg><use href="#suit${i}"/></svg>`;
+  const starIc = '<svg><use href="#star"/></svg>';
+  const plural = (n, a, b) => n + ' ' + (n === 1 ? a : b);
+
+  const focused = document.activeElement && document.activeElement.dataset.i;
+  const oldVals = [...document.querySelectorAll('#roundIn input')].map(i => i.value);
+
+  let h = '';
+  // Spielerkarten
+  h += '<div class="hand">' + PLAYERS.map((p, i) => {
+    const meta = [];
+    if (starsAll[i]) meta.push(`<span class="st">★ ${starsAll[i]}</span>`);
+    if (wins[i]) meta.push(`<span>${plural(wins[i], 'Sieg', 'Siege')}</span>`);
+    return `<div class="pcard s${i}${lead.includes(i) ? ' lead' : ''}" aria-label="${p}">
+      <div class="idx tl">${p[0]}${suit(i)}</div><div class="idx br">${p[0]}${suit(i)}</div>
+      ${ses && i === d ? '<span class="gibt">gibt</span>' : ''}
+      <div class="pname">${p}</div>
+      <div class="big">${ses ? dayTot[i] : allTot[i]}</div>
+      <div class="tot">${ses ? 'gesamt ' + allTot[i] : 'Gesamtstand'}</div>
+      <div class="meta">${meta.join('')}</div>
+    </div>`; }).join('') + '</div>';
+
+  if (!FIREBASE_CONFIG.apiKey) h += '<div class="banner">Demo-Modus: Die Daten bleiben auf diesem Gerät. Trag die Firebase-Werte in <code>index.html</code> ein, damit alle denselben Stand sehen.</div>';
+
+  if (ses) {
+    h += `<section class="panel"><div class="head"><h2>Runde ${rs.length + 1}</h2><span class="turn"><b>${PLAYERS[d]}</b> gibt, danach ${PLAYERS[(d + 1) % 3]}</span></div>
+      <div class="inputs" id="roundIn">` + PLAYERS.map((p, i) => `
+      <div class="s${i}"><label for="in${i}">${suit(i)}${p}</label>
+      <input id="in${i}" data-i="${i}" type="text" inputmode="numeric" pattern="[0-9]*" enterkeyhint="${i < 2 ? 'next' : 'done'}" autocomplete="off" maxlength="3" aria-label="Punkte ${p}"></div>`).join('') +
+      '</div><div class="hint" id="hint" aria-live="polite"></div><button class="primary" id="save" disabled>Runde speichern</button></section>';
+
+    h += `<section><div class="head"><h2>Heute gespielt</h2><span class="turn">${fmtDate(ses.start)}</span></div>`;
+    if (!rs.length) h += '<p class="empty">Die erste Runde erscheint hier, sobald sie gespeichert ist.</p>';
+    else {
+      const rows = rs.map((r, k) => { const st = starOf(r);
+        return `<tr><td class="r">${k + 1}${r.d == null ? '' : ' <span title="Geber">' + PLAYERS[r.d] + '</span>'}</td>${r.s.map((v, i) => `<td class="${i === st ? 'zero' : ''}">${i === st ? starIc : v}</td>`).join('')}</tr>`; });
+      h += '<table><thead><tr><th style="text-align:left">Runde</th>' + PLAYERS.map(p => '<th>' + p + '</th>').join('') + '</tr></thead><tbody>' +
+        rows.reverse().join('') + '<tr class="sum"><td class="r">Summe</td>' + dayTot.map(v => '<td>' + v + '</td>').join('') + '</tr></tbody></table>';
+      h += '<button class="link" id="undo">Letzte Runde löschen</button>';
+    }
+    h += '<button class="ghost danger" id="end" style="width:100%;margin-top:14px">Spieltag beenden und Sieger eintragen</button></section>';
+  } else {
+    h += '<section class="panel"><h2>Neuer Spieltag</h2><div class="turn">Wer teilt zuerst aus?</div><div class="pick">' +
+      PLAYERS.map((p, i) => `<button data-pick="${i}" class="${i === pickDealer ? 'on' : ''}">${p}</button>`).join('') +
+      '</div><button class="primary" id="start">Spieltag starten</button></section>';
+  }
+
+  const done = state.sessions.filter(s => s.end).sort((a, b) => b.start - a.start);
+  h += '<section><h2>Bisherige Spieltage</h2><div class="tally">' + PLAYERS.map((p, i) =>
+    `<div class="s${i}"><b>${p}</b><span>${plural(wins[i], 'Sieg', 'Siege')}<br>${plural(starsAll[i], 'Stern', 'Sterne')}</span></div>`).join('') + '</div>';
+  h += done.length ? done.map(s => { const st = starTally(sessionRounds(s.id)); const sx = st.map((n, i) => n ? PLAYERS[i] + ' ★' + (n > 1 ? n : '') : '').filter(Boolean).join(', ');
+    const info = [s.totals.join(' / '), s.imp ? 'nachgetragen' : plural(s.rounds || 0, 'Runde', 'Runden'), sx].filter(Boolean).join(', ');
+    return `<div class="day-item"><div>${fmtDate(s.start)}<div class="t">${info}</div></div>
+      <div style="display:flex;align-items:center"><span class="w">${s.winners.map(i => PLAYERS[i]).join(' & ')} gewinnt</span><button class="edit" data-edit="${s.id}">${edit && edit.sid === s.id ? 'Schließen' : 'Bearbeiten'}</button></div></div>` +
+      (edit && edit.sid === s.id ? editorHtml(s) : ''); }).join('') : '<p class="empty">Wenn ihr einen Spieltag beendet, steht er hier mit Sieger und Endstand.</p>';
+  h += '</section>';
+
+  h += `<section><details><summary>Einstellungen und Link teilen</summary>
+    <div class="setting"><span>Sieger ist, wer …</span><select id="dir">
+      <option value="low" ${lowWins() ? 'selected' : ''}>am wenigsten Punkte hat</option>
+      <option value="high" ${lowWins() ? '' : 'selected'}>am meisten Punkte hat</option></select></div>
+    ${ses ? '<div class="setting"><span>Geber korrigieren</span><select id="dealerSel">' + PLAYERS.map((p, i) => `<option value="${i}" ${i === d ? 'selected' : ''}>${p}</option>`).join('') + '</select></div>' : ''}
+    <div class="sub-h">Spieltag nachtragen</div>
+    <div class="turn">Nur der Endstand eines früheren Abends.</div>
+    <div class="setting"><span>Datum</span><input type="date" id="pastDate"></div>
+    <div class="inputs" style="margin-top:10px">${PLAYERS.map((p, i) => `<div class="s${i}"><label for="past${i}">${p}</label><input id="past${i}" type="text" inputmode="numeric" pattern="[0-9]*" style="font-size:20px;padding:9px 4px"></div>`).join('')}</div>
+    <button class="ghost" id="pastSave" style="width:100%;margin-top:8px">Spieltag hinzufügen</button>
+    <div class="sub-h">Link für Tobi und Stanzl</div>
+    <div class="share">${location.href}</div>
+    <button class="ghost" id="copy" style="width:100%">Link kopieren</button>
+    </details></section>`;
+
+  app.innerHTML = h;
+
+  // Eingaben nach Neuzeichnen wiederherstellen
+  const ins = [...document.querySelectorAll('#roundIn input')];
+  ins.forEach((inp, i) => {
+    if (typed[i] && oldVals[i] !== undefined) inp.value = oldVals[i];
+    inp.addEventListener('input', () => {
+      inp.value = inp.value.replace(/\D/g, '').slice(0, 3);
+      typed[i] = inp.value !== '';
+      if (inp.classList.contains('auto')) inp.classList.remove('auto');
+      if (inp.value === String(TOTAL)) {          // 115 eingetippt = Durchmarsch dieses Spielers
+        ins.forEach((x, j) => { x.value = j === i ? '0' : String(TOTAL); typed[j] = true; x.classList.remove('auto'); });
+        autoFill(); inp.blur(); return;
+      }
+      autoFill();
+      // nach 3 Ziffern oder eindeutigem Wert zum nächsten leeren Feld springen
+      if (inp.value === '0' || inp.value.length === 3 || Number(inp.value) * 10 > TOTAL) {
+        const next = ins.find((x, j) => j > i && !typed[j]);
+        if (next && typed.filter(Boolean).length < 2) next.focus();
+      }
+    });
+    inp.addEventListener('keydown', e => {
+      if (e.key !== 'Enter') return;
+      e.preventDefault();
+      const next = ins.find((x, j) => j > i && !typed[j]);
+      if (typed.filter(Boolean).length < 2 && next) next.focus(); else saveRound();
+    });
+  });
+  if (ins.length) { autoFill(); if (focused) ins[focused]?.focus(); }
+
+  $('#save')?.addEventListener('click', saveRound);
+  $('#undo')?.addEventListener('click', undoLast);
+  $('#end')?.addEventListener('click', endSession);
+  $('#start')?.addEventListener('click', startSession);
+  document.querySelectorAll('[data-pick]').forEach(b => b.addEventListener('click', () => { pickDealer = +b.dataset.pick; render(); }));
+  $('#dir')?.addEventListener('change', e => api.setMeta({ lowWins: e.target.value === 'low' }));
+  $('#dealerSel')?.addEventListener('change', e => api.setMeta({ dealer: +e.target.value }));
+  document.querySelectorAll('[data-edit]').forEach(b => b.addEventListener('click', () => edit && edit.sid === b.dataset.edit ? (edit = null, render()) : openEdit(b.dataset.edit)));
+  document.querySelectorAll('[data-er]').forEach(inp => inp.addEventListener('input', () => {
+    inp.value = inp.value.replace(/\D/g, ''); edit.rows[inp.dataset.er][+inp.dataset.ei] = inp.value;
+    const r = state.rounds.find(x => x.id === inp.dataset.er);
+    const bad = !!checkRow(r, edit.rows[r.id]);
+    document.querySelectorAll(`[data-er="${r.id}"]`).forEach(x => x.classList.toggle('bad', bad));
+  }));
+  document.querySelectorAll('[data-edel]').forEach(b => b.addEventListener('click', () => {
+    const id = b.dataset.edel; edit.del.has(id) ? edit.del.delete(id) : edit.del.add(id); render();
+  }));
+  $('#edDate')?.addEventListener('change', e => edit.date = e.target.value);
+  $('#edCancel')?.addEventListener('click', () => { edit = null; render(); });
+  $('#edSave')?.addEventListener('click', saveEdit);
+  $('#edDelete')?.addEventListener('click', deleteSession);
+  $('#pastSave')?.addEventListener('click', async () => {
+    const dv = $('#pastDate').value; const tot = [0, 1, 2].map(i => $('#past' + i).value);
+    if (!dv || tot.some(v => !/^\d+$/.test(v))) { alert('Bitte Datum und alle drei Endstände eintragen.'); return; }
+    const t = tot.map(Number);
+    if (!confirm('Spieltag ' + dv + ' mit ' + t.join(' / ') + ' hinzufügen?')) return;
+    const [y, m, dd] = dv.split('-').map(Number);
+    await addPastSession('past-' + uid(), new Date(y, m - 1, dd, 20, 0).getTime(), t);
+  });
+  $('#copy')?.addEventListener('click', async () => {
+    try { await navigator.clipboard.writeText(location.href); $('#copy').textContent = 'Kopiert ✓'; }
+    catch { prompt('Link kopieren:', location.href); }
+  });
+}
+
+/* ---------- Start ---------- */
+function renderGames() {
+  $('#games').innerHTML = GAMES.map(g => `<button data-game="${g.id}" class="${g.id === GAME.id ? 'on' : ''}">${g.name}</button>`).join('') +
+    '<button disabled>Weitere Spiele folgen</button>';
+  document.querySelectorAll('[data-game]').forEach(b => b.onclick = () => {
+    if (b.dataset.game === GAME.id) return;
+    store.set('dk_game', b.dataset.game); location.reload();
+  });
+}
+async function boot() {
+  renderGames();
+  if (!FIREBASE_CONFIG.apiKey) { api = demoBackend(); api.subscribe(render); return; }
+  let key = getKey();
+  if (!key) {
+    $('#app').innerHTML = `<section><h2>Willkommen</h2>
+      <p style="font-size:15px">Für diese Seite fehlt noch der Zugangsschlüssel. Öffne den Link, den du bekommen hast – oder lege eine neue Spielrunde an (nur einmal, durch eine Person).</p>
+      <button class="primary" id="create">Neue Spielrunde anlegen</button></section>`;
+    $('#create').onclick = () => { key = newKey(); store.set('hk_key', key); location.hash = 'k=' + key; location.reload(); };
+    return;
+  }
+  try { api = await firebaseBackend(key); api.subscribe(render); }
+  catch (e) { $('#app').innerHTML = '<section><p class="hint err">Verbindung zu Firebase fehlgeschlagen: ' + (e.message || e) + '</p></section>'; }
+}
+boot();
+</script>
+</body>
+</html>
